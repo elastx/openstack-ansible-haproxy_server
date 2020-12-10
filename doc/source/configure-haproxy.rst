@@ -356,3 +356,25 @@ Here is an example that shows how to achieve the goal
 This will add two acl rules ``path_sub -i write`` and ``path_sub -i query``  to
 the front end and use the backend specified in the rule. If no backend is specified
 it will use a default ``haproxy_service_name`` backend.
+
+Adding prometheus metrics to haproxy
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Since haproxy 2.0 it's possible to exposes prometheus metrics.
+https://www.haproxy.com/blog/haproxy-exposes-a-prometheus-metrics-endpoint/
+if you need to create a frontend for it you can use the `haproxy_frontend_only`
+option:
+
+.. code-block:: yaml
+
+  - service:
+      haproxy_service_name: prometheus-metrics
+      haproxy_port: 8404
+      haproxy_bind:
+        - '127.0.0.1'
+      haproxy_whitelist_networks: "{{ haproxy_whitelist_networks }}"
+      haproxy_frontend_only: True
+      haproxy_frontend_raw:
+        - 'http-request use-service prometheus-exporter if { path /metrics }'
+      haproxy_service_enabled: True
+      haproxy_balance_type: 'http'
