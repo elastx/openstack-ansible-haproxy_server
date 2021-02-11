@@ -10,7 +10,8 @@ global
 {% for key, value in ((_haproxy_default_tuning_params | default({})) | combine(haproxy_tuning_params)).items() %}
         {{ key }} {{ value }}
 {% endfor %}
-        stats socket /var/run/haproxy.stat level admin mode 600
+        stats socket /var/run/haproxy.stat level admin mode {{ haproxy_stats_mode }}{% if haproxy_stats_group is defined %} group {{ haproxy_stats_group }}{% endif %}
+
 {% if haproxy_stats_process is defined %}
         stats bind-process {{ haproxy_stats_process }}
 {% endif %}
