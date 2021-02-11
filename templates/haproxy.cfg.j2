@@ -19,6 +19,7 @@ global
         tune.ssl.lifetime {{ haproxy_tuning_params.ssl_lifetime | default('300') }}
 {% endif %}
         stats socket /var/run/haproxy.stat level admin mode {{ haproxy_stats_mode }}{% if haproxy_stats_group is defined %} group {{ haproxy_stats_group }}{% endif %}
+
         {% if haproxy_ssl | bool %}
         ssl-default-bind-options {{ haproxy_ssl_bind_options }}
         tune.ssl.default-dh-param {{haproxy_ssl_dh_param}}
