@@ -9,6 +9,7 @@ global
         maxconn {{ haproxy_maxconn }}
 {% if haproxy_tuning_params is defined %}
         nbproc {{ haproxy_tuning_params.nbproc | default('1') }}
+        nbthread {{ haproxy_tuning_params.nbthread | default('1') }}
         tune.bufsize {{ haproxy_tuning_params.bufsize | default('384000') }}
         tune.chksize {{ haproxy_tuning_params.chksize | default('16384') }}
         tune.comp.maxlevel {{ haproxy_tuning_params.comp_maxlevel | default('1') }}
