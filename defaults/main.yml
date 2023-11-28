@@ -233,3 +233,7 @@ haproxy_log_mount_point: "/var/lib/haproxy/dev/log"
 
 # Ansible group name which should be used for distrtibuting self signed SSL Certificates
 haproxy_ansible_group_name: haproxy_all
+
+# Add defaults for rise and fall
+haproxy_default_rise: 1
+haproxy_default_fall: 2
