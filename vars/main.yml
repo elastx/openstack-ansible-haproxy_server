@@ -31,10 +31,9 @@ _haproxy_tls_swift_vip_binds: |
   {% endif %}
   {% endif %}
   {% if swift_external_lb_vip_address_v6 is defined %}
-  {% for vip_address in swift_external_lb_vip_address_v6 %}
   {% if haproxy_bind_internal_lb_vip_address != swift_external_lb_vip_address_v6 %}
-  {%   set _ = vip_binds.append(vip_address) %}
-  {% endfor %}
+  {%   set _ = vip_binds.append(swift_external_lb_vip_address_v6) %}
+  {% endif %}
   {{ vip_binds }}
   {% endif %}
 
