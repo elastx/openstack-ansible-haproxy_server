@@ -23,9 +23,35 @@ _haproxy_tls_vip_binds: |
   {% endfor %}
   {{ vip_binds }}
 
+_haproxy_tls_swift_vip_binds: |
+  {% if swift_external_lb_vip_address is defined %}
+  {% set vip_binds = [swift_external_lb_vip_address] %}
+  {% if haproxy_bind_internal_lb_vip_address != swift_external_lb_vip_address %}
+  {%   set _ = vip_binds.append(haproxy_bind_internal_lb_vip_address) %}
+  {% endif %}
+  {% endif %}
+  {% if swift_external_lb_vip_address_v6 is defined %}
+  {% for vip_address in swift_external_lb_vip_address_v6 %}
+  {% if haproxy_bind_internal_lb_vip_address != swift_external_lb_vip_address_v6 %}
+  {%   set _ = vip_binds.append(vip_address) %}
+  {% endfor %}
+  {{ vip_binds }}
+  {% endif %}
+
 _haproxy_pki_certificates: |
   {% set _pki_certs = [] %}
   {% for vip in _haproxy_tls_vip_binds %}
+  {% set _ = _pki_certs.append(
+      {
+        'name': 'haproxy_' ~ ansible_facts['hostname'] ~ '-' ~ vip,
+        'provider': 'ownca',
+        'cn': ansible_facts['hostname'],
+        'san': 'DNS:' ~ ansible_facts['hostname'] ~  ',DNS:' ~ ansible_facts['fqdn'] ~ ',' ~ (vip | ansible.netcommon.ipaddr) | ternary('IP:', 'DNS:') ~ vip,
+        'signed_by': haproxy_pki_intermediate_cert_name,
+      }
+    ) %}
+  {% endfor %}
+  {% for vip in _haproxy_tls_swift_vip_binds %}
   {% set _ = _pki_certs.append(
       {
         'name': 'haproxy_' ~ ansible_facts['hostname'] ~ '-' ~ vip,
@@ -41,6 +67,41 @@ _haproxy_pki_certificates: |
 _haproxy_pki_install_certificates: |
   {% set _pki_install = [] %}
   {% for vip in _haproxy_tls_vip_binds %}
+  {% set _cert_basename = '/haproxy_' ~ ansible_facts['hostname'] ~ '-' ~ vip %}
+  {% set _ = _pki_install.append(
+      {
+        'src': haproxy_user_ssl_cert | default(haproxy_pki_certs_path ~ _cert_basename ~ '.crt'),
+        'dest': haproxy_ssl_cert_path ~ _cert_basename  ~ '.crt',
+        'owner': 'root',
+        'group': 'root',
+        'mode': '0644'
+      }
+    )
+  %}
+  {% set _ = _pki_install.append(
+      {
+        'src': haproxy_user_ssl_key | default(haproxy_pki_keys_path ~ _cert_basename ~ '.key.pem'),
+        'dest': haproxy_ssl_cert_path ~ _cert_basename  ~ '.key',
+        'owner': 'root',
+        'group': 'root',
+        'mode': '0644'
+      }
+    )
+  %}
+  {# We need to put CA only when it's provided by user or internal CA is used and user certs are not provided #}
+  {% if (haproxy_user_ssl_cert is not defined and haproxy_user_ssl_key is not defined) or haproxy_user_ssl_ca_cert is defined %}
+  {%   set _ = _pki_install.append(
+        {
+          'src': haproxy_user_ssl_ca_cert | default(haproxy_pki_intermediate_cert_path),
+          'dest': haproxy_ssl_cert_path ~ _cert_basename  ~ '-ca.crt',
+          'owner': 'root',
+          'group': 'root',
+          'mode': '0644'
+        })
+  %}
+  {% endif %}
+  {% endfor %}
+  {% for vip in _haproxy_tls_swift_vip_binds %}
   {% set _cert_basename = '/haproxy_' ~ ansible_facts['hostname'] ~ '-' ~ vip %}
   {% set _ = _pki_install.append(
       {
